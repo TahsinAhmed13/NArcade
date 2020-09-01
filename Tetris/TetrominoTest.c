@@ -16,21 +16,21 @@ int main()
 
     int ch = 0; 
     int n = 0; 
-    bool **tetrimino; 
-    tetrimino = get_copy(n); 
+    bool **tetromino; 
+    tetromino = get_copy(n); 
     do 
     {
         if(ch == KEY_UP)
-            rotate(tetrimino); 
+            rotate(tetromino); 
         else if(ch == KEY_LEFT && n > 0)
         {
-            del_copy(tetrimino); 
-            tetrimino = get_copy(--n); 
+            del_copy(tetromino); 
+            tetromino = get_copy(--n); 
         }
         else if(ch == KEY_RIGHT && n < 6)
         {
-            del_copy(tetrimino); 
-            tetrimino = get_copy(++n); 
+            del_copy(tetromino); 
+            tetromino = get_copy(++n); 
         }
 
         werase(win); 
@@ -39,7 +39,7 @@ int main()
         wattrset(win, A_REVERSE);
         for(int i = 0; i < 4; ++i)
             for(int j = 0; j < 4; ++j)
-                if(tetrimino[i][j])
+                if(tetromino[i][j])
                     mvwprintw(win, 1 + i, 1 + 2*j, "  "); 
         wrefresh(win); 
     }while((ch = wgetch(win)) != KEY_F(1)); 

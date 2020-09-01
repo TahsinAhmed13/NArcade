@@ -49,6 +49,7 @@ bool const g_tetrominos[7][4][4] = {
 
 bool **get_copy(int n)
 {
+    n %= sizeof(g_tetrominos) / sizeof(g_tetrominos[0]); 
     bool **copy = (bool **) malloc(4 * sizeof(bool *)); 
     for(int i = 0; i < 4; ++i)
     {
@@ -66,26 +67,44 @@ void del_copy(bool **copy)
     free(copy); 
 }
 
+int get_height(bool **tetromino)
+{
+    int h = 0; 
+    for(int i = 0; i < 4; ++i)
+    {
+        bool tmp = false; 
+        for(int j = 0; j < 4 && !tmp; ++j)
+            tmp = tmp || tetromino[i][j]; 
+        if(tmp) ++h; 
+        else    break; 
+    }
+    return h; 
+}
+
+int get_width(bool **tetromino)
+{
+    int w = 0; 
+    for(int j = 0; j < 4; ++j)
+    {
+        bool tmp = false; 
+        for(int i = 0; i < 4 && !tmp; ++i)
+            tmp = tmp || tetromino[i][j]; 
+        if(tmp) ++w; 
+        else    break; 
+    }
+    return w; 
+}
+
 void rotate(bool **tetromino)
 {
-    int shift = 0; 
-    bool stop = false; 
-    for(int j = 3; j >= 0 && !stop; --j)
-        for(int i = 0; i < 4; ++i)
-            if(tetromino[i][j])
-            {
-                shift = j; 
-                stop = true; 
-                break; 
-            }
-
-    bool rot[4][4] = {{0}}; 
+    int shift = get_width(tetromino) - 1; 
+    bool rotated[4][4] = {{0}}; 
     for(int i = 0; i < 4; ++i)
         for(int j = 0; j < 4; ++j)
             if(tetromino[i][j])
-                rot[shift-j][i] = true; 
+                rotated[shift-j][i] = true; 
 
     for(int i = 0; i < 4; ++i)
         for(int j = 0; j < 4; ++j)
-            tetromino[i][j] = rot[i][j]; 
+            tetromino[i][j] = rotated[i][j]; 
 }
