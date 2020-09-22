@@ -95,6 +95,7 @@ int get_width(bool **tetromino)
     return w; 
 }
 
+/*
 void rotate(bool **tetromino)
 {
     int shift = get_width(tetromino) - 1; 
@@ -107,4 +108,20 @@ void rotate(bool **tetromino)
     for(int i = 0; i < 4; ++i)
         for(int j = 0; j < 4; ++j)
             tetromino[i][j] = rotated[i][j]; 
+}
+*/
+
+bool **rotate(bool **tetromino)
+{
+    bool **rotated = (bool **) calloc(4, sizeof(bool *)); 
+    for(int i = 0; i < 4; ++i)
+        rotated[i] = (bool *) calloc(4, sizeof(bool)); 
+
+    int shift = get_width(tetromino) - 1; 
+    for(int i = 0; i < 4; ++i)
+        for(int j = 0; j < 4; ++j)
+            if(tetromino[i][j])
+                rotated[shift-j][i] = true; 
+
+    return rotated; 
 }

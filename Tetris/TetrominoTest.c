@@ -20,8 +20,16 @@ int main()
     tetromino = get_copy(n); 
     do 
     {
+        /*
         if(ch == KEY_UP)
             rotate(tetromino); 
+        */
+        if(ch == KEY_UP)
+        {
+            bool **tmp = rotate(tetromino); 
+            del_copy(tetromino); 
+            tetromino = tmp; 
+        }
         else if(ch == KEY_LEFT && n > 0)
         {
             del_copy(tetromino); 

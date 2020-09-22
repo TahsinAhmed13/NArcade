@@ -10,6 +10,10 @@
 
 #define USEC_IN_SEC 0.000001
 
+#define CONTINUE 0
+#define RESTART 1
+#define QUIT 2
+
 const char title[] = "Tetris"; 
 
 WINDOW *g_main_win; 
@@ -19,60 +23,22 @@ WINDOW *g_next_win;
 
 void setup(); 
 
-void draw_tetromino(WINDOW *, const chtype, bool **const, int, int);
-
-int drop_tetromino(bool **); 
-int scan_lines(); 
-bool game_over(); 
-int calc_score(int); 
+int play(); 
+bool play_again(); 
 
 void cleanup(); 
 
 int main()
 {
     setup(); 
-
     srand(time(0)); 
-    int score = 0; 
-    mvwprintw(g_score_win, 
-            (getmaxy(g_score_win)-1) / 2, 
-            (getmaxx(g_score_win)-1) / 2, 
-            "%d", score); 
-    wrefresh(g_score_win); 
-    bool **tetromino; 
-    bool **n_tetromino = get_copy(rand()); 
-
-    while(true)
+    int status; 
+    do
     {
-        tetromino = n_tetromino; 
-
-        n_tetromino = get_copy(rand()); 
-        werase(g_next_win); 
-        box(g_next_win, 0, 0); 
-        int n_sy = (getmaxy(g_next_win) - get_height(n_tetromino)) / 2; 
-        int n_sx = (getmaxx(g_next_win) - 2*get_width(n_tetromino)) / 2; 
-        draw_tetromino(g_next_win, ' ' | A_REVERSE, n_tetromino, n_sy, n_sx);  
-        wrefresh(g_next_win); 
-
-        if(drop_tetromino(tetromino) == ERR) 
-            break; 
-        if(!game_over())
-            score += calc_score(scan_lines()); 
-        else                
-            break;  
-        int digits = ceil(log10(score)); 
-        mvwprintw(g_score_win, 
-                getmaxy(g_score_win) / 2, 
-                (getmaxx(g_score_win) - digits) / 2, 
-                "%d", score); 
-        wrefresh(g_score_win); 
-
-        del_copy(tetromino); 
+        status = play(); 
+        if(status == QUIT) break; 
     }
-
-    if(tetromino != NULL) 
-        del_copy(tetromino); 
-    del_copy(n_tetromino); 
+    while(status == RESTART || play_again()); 
     cleanup(); 
 }
 
@@ -135,10 +101,25 @@ void print_titles()
     print_title(g_next_win, "Next"); 
 }
 
+void reset_win(WINDOW *w)
+{
+    werase(w); 
+    box(w, 0, 0); 
+    wrefresh(w); 
+}
+
+void reset_wins()
+{
+    reset_win(g_main_win); 
+    reset_win(g_game_win); 
+    reset_win(g_score_win); 
+    reset_win(g_next_win); 
+}
+
 void setup()
 {
     initscr(); 
-    printw("Press F1 to exit"); 
+    printw("Press Space to options"); 
     refresh(); 
     cbreak(); 
     noecho(); 
@@ -151,7 +132,66 @@ void setup()
     nodelay(g_game_win, TRUE); 
 }
 
-void draw_tetromino(WINDOW *win, const chtype ch, bool **const t, int sy, int sx)
+void redraw(WINDOW *w)
+{
+    for(int i = 0; i < getmaxy(w); ++i)
+        for(int j = 0; j < getmaxx(w); ++j)
+        {
+            chtype ch = mvwinch(w, i, j); 
+            waddch(w, ch); 
+        }
+}
+
+int show_propmt(const char *prompt, int n, char **opts)
+{
+    int pady = getmaxy(g_game_win) * 0.05; 
+    int height = pady * 2 + n; 
+    int width = getmaxx(g_game_win) * 0.85;
+    int starty = (LINES - height) / 2; 
+    int startx = (COLS - width) / 2; 
+
+    WINDOW *w = newwin(height, width, starty, startx); 
+    keypad(w, TRUE); 
+    box(w, 0, 0); 
+    mvwprintw(w, 0, (width - strlen(title)) / 2, prompt); 
+    for(int i = 0; i < n; ++i)
+    {
+        int y = pady + i;  
+        int x = (width - strlen(opts[i])) / 2; 
+        mvwprintw(w, y, x, opts[i]);  
+    }
+    wrefresh(w); 
+
+    int ch = 0; 
+    int i = 0; 
+    do
+    {
+        mvwchgat(w, pady + i, 1, 
+                width - 2, A_NORMAL, 0, NULL); 
+        if(ch == KEY_UP && i > 0)           --i;  
+        else if(ch == KEY_DOWN && i < n-1)  ++i; 
+        mvwchgat(w, pady + i, 1, 
+                width - 2, A_REVERSE, 0, NULL); 
+        wrefresh(w); 
+    } while((ch = wgetch(w)) != 10); 
+
+    werase(w); 
+    wrefresh(w); 
+    delwin(w); 
+    return i; 
+}
+
+int pause()
+{
+    char prompt[] = "Paused"; 
+    char opt1[] = "Continue"; 
+    char opt2[] = "Start Over";  
+    char opt3[] = "Quit"; 
+    char *opts[] = {opt1, opt2, opt3}; 
+    return show_propmt(prompt, 3, opts); 
+}
+
+void draw_tetromino(WINDOW *win, chtype ch, bool **t, int sy, int sx)
 {
     for(int i = 0; i < 4; ++i)
         for(int j = 0; j < 4; ++j)
@@ -159,7 +199,7 @@ void draw_tetromino(WINDOW *win, const chtype ch, bool **const t, int sy, int sx
                 mvwhline(win, sy + i, sx + 2*j, ch, 2); 
 }
 
-bool is_valid(WINDOW *win, int y, int x)
+bool is_valid(const WINDOW *win, int y, int x)
 {
     return 0 < y && y < getmaxy(win)-1 
         && 0 < x && x < getmaxx(win)-2; 
@@ -182,7 +222,8 @@ bool can_move(bool **t, int y, int x)
     return true; 
 }
 
-int drop_tetromino(bool **t)
+// t is a ptr to a 2D arr
+int drop_tetromino(bool ***t)
 {   
     const int w = getmaxx(g_game_win); 
     const double drop_rate = 0.5; // one line per sec
@@ -191,8 +232,7 @@ int drop_tetromino(bool **t)
 
     int sy = 1;
     int sx = (w - 4) / 2;
-    int th = get_height(t); 
-    int tw = get_width(t); 
+    bool **rot = rotate(*t); 
 
     double drop_factor; 
     double cycle_start = get_time(); 
@@ -200,41 +240,56 @@ int drop_tetromino(bool **t)
     while(true)
     {
         ch = wgetch(g_game_win); 
-        draw_tetromino(g_game_win, ' ' | A_NORMAL, t, sy, sx); 
+        draw_tetromino(g_game_win, ' ' | A_NORMAL, *t, sy, sx); 
 
         drop_factor = 1; 
-        if(ch == KEY_LEFT && can_move(t, sy, sx-2))
+        if(ch == KEY_LEFT && can_move(*t, sy, sx-2))
             sx -= 2; 
-        else if(ch == KEY_RIGHT && can_move(t, sy, sx+2)) 
+        else if(ch == KEY_RIGHT && can_move(*t, sy, sx+2)) 
             sx += 2; 
-        else if(ch == KEY_UP && sx + 2*th <= w - 3)
+        else if(ch == KEY_UP && can_move(rot, sy, sx))
         {
-            int tmp = th; 
-            th = tw, tw = tmp; 
-            rotate(t); 
+            // address of array changes
+            del_copy(*t); 
+            *t = rot; 
+            rot = rotate(*t); 
         }
         else if(ch == KEY_DOWN)
             drop_factor = 0.1;  
-        else if(ch == KEY_F(1))
-            return ERR; 
+        else if(ch == ' ')
+        {
+            int status = pause(); 
+            if(status == 0)
+            {
+                redraw(g_game_win); 
+                wrefresh(g_game_win); 
+            }
+            else
+            {
+                del_copy(rot); 
+                return status; 
+            }
+        }
 
         if(get_time() - cycle_start >= drop_rate * drop_factor) 
         {
-            if(can_move(t, sy+1, sx)) ++sy;  
+            if(can_move(*t, sy+1, sx)) ++sy;  
             else                      break; 
             cycle_start = get_time(); 
         }
 
-        draw_tetromino(g_game_win, ' ' | A_REVERSE, t, sy, sx); 
+        draw_tetromino(g_game_win, ' ' | A_REVERSE, *t, sy, sx); 
         wrefresh(g_game_win); 
     }
 
-    draw_tetromino(g_game_win, ' ' | A_REVERSE, t, sy, sx); 
+    del_copy(rot); 
+    draw_tetromino(g_game_win, ' ' | A_REVERSE, *t, sy, sx); 
     wrefresh(g_game_win); 
-    return OK; 
+
+    return CONTINUE; 
 }
 
-void delete_line(int n)
+void clear_line(int n)
 {
     for(int i = n; i > 0; --i)
     {
@@ -249,7 +304,7 @@ void delete_line(int n)
     }
 }
 
-int scan_lines()
+int clear_lines()
 {
     int cols = (int) (getmaxx(g_game_win) / 2) - 1; 
     int cleared = 0; 
@@ -266,7 +321,7 @@ int scan_lines()
         }
         if(full)        
         {
-            delete_line(i); 
+            clear_line(i); 
             ++cleared; 
         }
         else if(empty)  break; 
@@ -274,19 +329,6 @@ int scan_lines()
     }
     wrefresh(g_game_win); 
     return cleared; 
-}
-
-bool game_over()
-{
-    int cols = (int) (getmaxx(g_game_win) / 2) - 1; 
-    for(int j = 0; j < cols; ++j)
-    {
-        chtype ch = mvwinch(g_game_win, 1, 2*j+1); 
-        int attr = ch & A_ATTRIBUTES; 
-        if(attr != A_NORMAL)
-            return true; 
-    }
-    return false; 
 }
 
 int calc_score(int n)
@@ -304,6 +346,77 @@ int calc_score(int n)
         default: 
             return 1200; 
     }
+}
+
+bool game_over()
+{
+    int cols = (int) (getmaxx(g_game_win) / 2) - 1; 
+    for(int j = 0; j < cols; ++j)
+    {
+        chtype ch = mvwinch(g_game_win, 1, 2*j+1); 
+        int attr = ch & A_ATTRIBUTES; 
+        if(attr != A_NORMAL)
+            return true; 
+    }
+    return false; 
+}
+
+int play()
+{
+    reset_wins(); 
+
+    // initialize game variables
+    int score = 0; 
+    mvwprintw(g_score_win, 
+            (getmaxy(g_score_win)-1) / 2, 
+            (getmaxx(g_score_win)-1) / 2, 
+            "%d", score); 
+    wrefresh(g_score_win); 
+    bool **tetromino; 
+    bool **n_tetromino = get_copy(rand()); 
+
+    while(true)
+    {
+        tetromino = n_tetromino; 
+
+        // get and show next tetromino
+        n_tetromino = get_copy(rand()); 
+        werase(g_next_win); 
+        box(g_next_win, 0, 0); 
+        int n_sy = (getmaxy(g_next_win) - get_height(n_tetromino)) / 2; 
+        int n_sx = (getmaxx(g_next_win) - 2*get_width(n_tetromino)) / 2; 
+        draw_tetromino(g_next_win, ' ' | A_REVERSE, n_tetromino, n_sy, n_sx);  
+        wrefresh(g_next_win); 
+
+        // play
+        int status = drop_tetromino(&tetromino); 
+        del_copy(tetromino); 
+        if(status != CONTINUE) return status; 
+
+        // update score
+        if(!game_over())
+            score += calc_score(clear_lines()); 
+        else break;  
+        int digits = ceil(log10(score)); 
+        mvwprintw(g_score_win, 
+                getmaxy(g_score_win) / 2, 
+                (getmaxx(g_score_win) - digits) / 2, 
+                "%d", score); 
+        wrefresh(g_score_win); 
+    }
+
+    // delete game variables 
+    del_copy(n_tetromino); 
+    return CONTINUE; 
+}
+
+bool play_again()
+{
+    char prompt[] = "Play Again?"; 
+    char opt1[] = "Yes"; 
+    char opt2[] = "No"; 
+    char *opts[] = {opt1, opt2}; 
+    return !show_propmt(prompt, 2, opts); 
 }
 
 void del_wins()
