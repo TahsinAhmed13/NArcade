@@ -116,6 +116,20 @@ void reset_wins()
     reset_win(g_next_win); 
 }
 
+void setup_color()
+{
+    start_color(); 
+    use_default_colors(); 
+
+    init_pair(1, -1, 51);   // I, cyan 
+    init_pair(2, -1, 226);  // O, yellow
+    init_pair(3, -1, 201);  // T, magenta
+    init_pair(4, -1, 214);  // L, orange
+    init_pair(5, -1, 21);   // J, blue
+    init_pair(6, -1, 46);   // S, green
+    init_pair(7, -1, 196);  // Z, red
+}
+
 void setup()
 {
     initscr(); 
@@ -130,6 +144,8 @@ void setup()
     refresh(); 
     keypad(g_game_win, TRUE); 
     nodelay(g_game_win, TRUE); 
+
+    if(has_colors()) setup_color(); 
 }
 
 void redraw(WINDOW *w)
@@ -212,10 +228,10 @@ bool can_move(bool **t, int y, int x)
         for(int j = 0; j < 4; ++j)
         {
             chtype ch = mvwinch(g_game_win, y + i, x + 2*j); 
-            int attr = ch & A_ATTRIBUTES; 
+            int color = ch & A_COLOR; 
             bool valid = is_valid(g_game_win, y + i, x + 2*j); 
 
-            if(t[i][j] && (attr != A_NORMAL || !valid))
+            if(t[i][j] && (color != COLOR_PAIR(0) || !valid))
                 return false; 
         }
     }
@@ -223,10 +239,10 @@ bool can_move(bool **t, int y, int x)
 }
 
 // t is a ptr to a 2D arr
-int drop_tetromino(bool ***t)
+int drop_tetromino(int i, bool ***t)
 {   
-    const int w = getmaxx(g_game_win); 
-    const double drop_rate = 0.5; // one line per sec
+    int w = getmaxx(g_game_win); 
+    double drop_rate = 0.5; // one line per sec
 
     int ch; 
 
@@ -240,7 +256,7 @@ int drop_tetromino(bool ***t)
     while(true)
     {
         ch = wgetch(g_game_win); 
-        draw_tetromino(g_game_win, ' ' | A_NORMAL, *t, sy, sx); 
+        draw_tetromino(g_game_win, ' ' | COLOR_PAIR(0), *t, sy, sx); 
 
         drop_factor = 1; 
         if(ch == KEY_LEFT && can_move(*t, sy, sx-2))
@@ -278,12 +294,12 @@ int drop_tetromino(bool ***t)
             cycle_start = get_time(); 
         }
 
-        draw_tetromino(g_game_win, ' ' | A_REVERSE, *t, sy, sx); 
+        draw_tetromino(g_game_win, ' ' | COLOR_PAIR(i+1), *t, sy, sx); 
         wrefresh(g_game_win); 
     }
 
     del_copy(rot); 
-    draw_tetromino(g_game_win, ' ' | A_REVERSE, *t, sy, sx); 
+    draw_tetromino(g_game_win, ' ' | COLOR_PAIR(i+1), *t, sy, sx); 
     wrefresh(g_game_win); 
 
     return CONTINUE; 
@@ -298,7 +314,7 @@ void clear_line(int n)
         {
             chtype tmp = mvwinch(g_game_win, i-1, j); 
             mvwaddch(g_game_win, i, j, tmp); 
-            finished = finished && (tmp & A_ATTRIBUTES) == A_NORMAL; 
+            finished = finished && (tmp & A_COLOR) == COLOR_PAIR(0); 
         }
         if(finished) break; 
     }
@@ -315,9 +331,9 @@ int clear_lines()
         for(int j = 0; j < cols; ++j)
         {
             chtype ch = mvwinch(g_game_win, i, 2*j+1); 
-            int attr = ch & A_ATTRIBUTES; 
-            full = full && attr != A_NORMAL; 
-            empty = empty && attr == A_NORMAL; 
+            int color = ch & A_COLOR; 
+            full = full && color != COLOR_PAIR(0); 
+            empty = empty && color == COLOR_PAIR(0); 
         }
         if(full)        
         {
@@ -354,8 +370,8 @@ bool game_over()
     for(int j = 0; j < cols; ++j)
     {
         chtype ch = mvwinch(g_game_win, 1, 2*j+1); 
-        int attr = ch & A_ATTRIBUTES; 
-        if(attr != A_NORMAL)
+        int color = ch & A_COLOR; 
+        if(color != COLOR_PAIR(0))
             return true; 
     }
     return false; 
@@ -372,24 +388,28 @@ int play()
             (getmaxx(g_score_win)-1) / 2, 
             "%d", score); 
     wrefresh(g_score_win); 
+    int i; 
     bool **tetromino; 
-    bool **n_tetromino = get_copy(rand()); 
+    int ni = rand() % 7; 
+    bool **n_tetromino = get_copy(ni); 
 
     while(true)
     {
+        i = ni; 
         tetromino = n_tetromino; 
 
         // get and show next tetromino
-        n_tetromino = get_copy(rand()); 
+        ni = rand() % 7; 
+        n_tetromino = get_copy(ni); 
         werase(g_next_win); 
         box(g_next_win, 0, 0); 
         int n_sy = (getmaxy(g_next_win) - get_height(n_tetromino)) / 2; 
         int n_sx = (getmaxx(g_next_win) - 2*get_width(n_tetromino)) / 2; 
-        draw_tetromino(g_next_win, ' ' | A_REVERSE, n_tetromino, n_sy, n_sx);  
+        draw_tetromino(g_next_win, ' ' | COLOR_PAIR(ni+1), n_tetromino, n_sy, n_sx);  
         wrefresh(g_next_win); 
 
         // play
-        int status = drop_tetromino(&tetromino); 
+        int status = drop_tetromino(i, &tetromino); 
         del_copy(tetromino); 
         if(status != CONTINUE) return status; 
 

@@ -4,43 +4,43 @@
 #include "Tetromino.h"
 
 bool const g_tetrominos[7][4][4] = {
-    // straight
+    // I
     {{1, 1, 1, 1}, 
     {0, 0, 0, 0}, 
     {0, 0, 0, 0}, 
     {0, 0, 0, 0}}, 
 
-    // square 
+    // O
     {{1, 1, 0, 0}, 
     {1, 1, 0, 0}, 
     {0, 0, 0, 0}, 
     {0, 0, 0, 0}}, 
 
-    // T-pose
+    // T
     {{1, 1, 1, 0}, 
     {0, 1, 0, 0}, 
     {0, 0, 0, 0}, 
     {0, 0, 0, 0}}, 
     
-    // left L
+    // L
     {{1, 0, 0, 0}, 
     {1, 0, 0, 0},
     {1, 1, 0, 0}, 
     {0, 0, 0, 0}}, 
 
-    // right L
+    // J
     {{0, 1, 0, 0}, 
     {0, 1, 0, 0},
     {1, 1, 0, 0}, 
     {0, 0, 0, 0}}, 
 
-    // forward skew
+    // S
     {{0, 1, 1, 0}, 
     {1, 1, 0, 0}, 
     {0, 0, 0, 0}, 
     {0, 0, 0, 0}}, 
     
-    // backward skew
+    // Z
     {{1, 1, 0, 0}, 
     {0, 1, 1, 0}, 
     {0, 0, 0, 0}, 
@@ -94,22 +94,6 @@ int get_width(bool **tetromino)
     }
     return w; 
 }
-
-/*
-void rotate(bool **tetromino)
-{
-    int shift = get_width(tetromino) - 1; 
-    bool rotated[4][4] = {{0}}; 
-    for(int i = 0; i < 4; ++i)
-        for(int j = 0; j < 4; ++j)
-            if(tetromino[i][j])
-                rotated[shift-j][i] = true; 
-
-    for(int i = 0; i < 4; ++i)
-        for(int j = 0; j < 4; ++j)
-            tetromino[i][j] = rotated[i][j]; 
-}
-*/
 
 bool **rotate(bool **tetromino)
 {
