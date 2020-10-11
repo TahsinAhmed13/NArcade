@@ -14,6 +14,8 @@
 #define RESTART 1
 #define QUIT 2
 
+#define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
+
 const char title[] = "Tetris"; 
 
 WINDOW *g_main_win; 
@@ -158,7 +160,7 @@ void redraw(WINDOW *w)
         }
 }
 
-int show_propmt(const char *prompt, int n, char **opts)
+int show_propmt(const char *prompt, char **opts, int n)
 {
     int pady = getmaxy(g_game_win) * 0.05; 
     int height = pady * 2 + n; 
@@ -169,7 +171,7 @@ int show_propmt(const char *prompt, int n, char **opts)
     WINDOW *w = newwin(height, width, starty, startx); 
     keypad(w, TRUE); 
     box(w, 0, 0); 
-    mvwprintw(w, 0, (width - strlen(title)) / 2, prompt); 
+    mvwprintw(w, 0, (width - strlen(prompt)) / 2, prompt); 
     for(int i = 0; i < n; ++i)
     {
         int y = pady + i;  
@@ -200,11 +202,12 @@ int show_propmt(const char *prompt, int n, char **opts)
 int pause()
 {
     char prompt[] = "Paused"; 
-    char opt1[] = "Continue"; 
-    char opt2[] = "Start Over";  
-    char opt3[] = "Quit"; 
-    char *opts[] = {opt1, opt2, opt3}; 
-    return show_propmt(prompt, 3, opts); 
+    char *opts[] = {
+        "Continue", 
+        "Restart", 
+        "Quit"
+    }; 
+    return show_propmt(prompt, opts, ARRAY_SIZE(opts)); 
 }
 
 void draw_tetromino(WINDOW *win, chtype ch, bool **t, int sy, int sx)
@@ -433,10 +436,8 @@ int play()
 bool play_again()
 {
     char prompt[] = "Play Again?"; 
-    char opt1[] = "Yes"; 
-    char opt2[] = "No"; 
-    char *opts[] = {opt1, opt2}; 
-    return !show_propmt(prompt, 2, opts); 
+    char *opts[] = { "Yes", "No" }; 
+    return !show_propmt(prompt, opts, ARRAY_SIZE(opts)); 
 }
 
 void del_wins()
