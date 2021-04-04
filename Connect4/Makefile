@@ -1,10 +1,14 @@
-Connect4 : Connect4.o 
-	cc -lpthread -lncurses Connect4.o -o Connect4
+OBJS = connect4.o
 
-Connect4.o : Connect4.c
-	cc -c Connect4.c
+run: connect4
+	./connect4
 
-.PHONY : clean 
-clean : 
-	-rm *.o
+connect4: ${OBJS} 
+	cc -o connect4 ${OBJS} -lpthread -lncurses 
+
+connect4.o: connect4.c
+	cc -c connect4.c
+
+clean: 
+	-rm *.o connect4
 

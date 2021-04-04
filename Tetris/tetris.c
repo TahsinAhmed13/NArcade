@@ -6,7 +6,7 @@
 #include <sys/time.h>
 #include <ncurses.h>
 
-#include "Tetromino.h"
+#include "tetromino.h"
 
 #define USEC_IN_SEC 0.000001
 
@@ -26,7 +26,7 @@ WINDOW *g_next_win;
 void setup(); 
 
 int play(); 
-bool play_again(); 
+int play_again(); 
 
 void cleanup(); 
 
@@ -210,7 +210,7 @@ int pause()
     return show_propmt(prompt, opts, ARRAY_SIZE(opts)); 
 }
 
-void draw_tetromino(WINDOW *win, chtype ch, bool **t, int sy, int sx)
+void draw_tetromino(WINDOW *win, chtype ch, TETROMINO t, int sy, int sx)
 {
     for(int i = 0; i < 4; ++i)
         for(int j = 0; j < 4; ++j)
@@ -218,13 +218,13 @@ void draw_tetromino(WINDOW *win, chtype ch, bool **t, int sy, int sx)
                 mvwhline(win, sy + i, sx + 2*j, ch, 2); 
 }
 
-bool is_valid(const WINDOW *win, int y, int x)
+int is_valid(const WINDOW *win, int y, int x)
 {
     return 0 < y && y < getmaxy(win)-1 
         && 0 < x && x < getmaxx(win)-2; 
 }
 
-bool can_move(bool **t, int y, int x)
+int can_move(TETROMINO t, int y, int x)
 {
     for(int i = 0; i < 4; ++i)
     {
@@ -232,7 +232,7 @@ bool can_move(bool **t, int y, int x)
         {
             chtype ch = mvwinch(g_game_win, y + i, x + 2*j); 
             int color = ch & A_COLOR; 
-            bool valid = is_valid(g_game_win, y + i, x + 2*j); 
+            int valid = is_valid(g_game_win, y + i, x + 2*j); 
 
             if(t[i][j] && (color != COLOR_PAIR(0) || !valid))
                 return false; 
@@ -241,8 +241,8 @@ bool can_move(bool **t, int y, int x)
     return true; 
 }
 
-// t is a ptr to a 2D arr
-int drop_tetromino(int i, bool ***t)
+// t is a ptr to a tetromino (aka a 2D array)
+int drop_tetromino(int i, TETROMINO * t)
 {   
     int w = getmaxx(g_game_win); 
     double drop_rate = 0.5; // one line per sec
@@ -251,7 +251,7 @@ int drop_tetromino(int i, bool ***t)
 
     int sy = 1;
     int sx = (w - 4) / 2;
-    bool **rot = rotate(*t); 
+    int **rot = rotate(*t); 
 
     double drop_factor; 
     double cycle_start = get_time(); 
@@ -312,7 +312,7 @@ void clear_line(int n)
 {
     for(int i = n; i > 0; --i)
     {
-        bool finished = true; 
+        int finished = true; 
         for(int j = 1; j < getmaxx(g_game_win)-1; ++j)
         {
             chtype tmp = mvwinch(g_game_win, i-1, j); 
@@ -330,7 +330,7 @@ int clear_lines()
     int i = getmaxy(g_game_win) - 2; 
     while(i > 1) 
     {
-        bool full = true, empty = true; 
+        int full = true, empty = true; 
         for(int j = 0; j < cols; ++j)
         {
             chtype ch = mvwinch(g_game_win, i, 2*j+1); 
@@ -367,7 +367,7 @@ int calc_score(int n)
     }
 }
 
-bool game_over()
+int game_over()
 {
     int cols = (int) (getmaxx(g_game_win) / 2) - 1; 
     for(int j = 0; j < cols; ++j)
@@ -392,9 +392,9 @@ int play()
             "%d", score); 
     wrefresh(g_score_win); 
     int i; 
-    bool **tetromino; 
+    int **tetromino; 
     int ni = rand() % 7; 
-    bool **n_tetromino = get_copy(ni); 
+    int **n_tetromino = get_copy(ni); 
 
     while(true)
     {
@@ -433,7 +433,7 @@ int play()
     return CONTINUE; 
 }
 
-bool play_again()
+int play_again()
 {
     char prompt[] = "Play Again?"; 
     char *opts[] = { "Yes", "No" }; 

@@ -1,19 +1,25 @@
-Tetris: Tetris.o Tetromino.o
-	cc -lm -lncurses Tetris.o Tetromino.o -o Tetris
+OBJS = tetris.o tetromino.o
+TEST_OBJS = tetromino_test.o tetromino.o
 
-Tetris.o: Tetris.c Tetromino.h
-	cc -c Tetris.c 
+all: tests run
 
-Tetromino.o: Tetromino.c Tetromino.h
-	cc -c Tetromino.c 
+run: tetris
+	./tetris
 
-TetrominoTest.o: TetrominoTest.c Tetromino.h
-	cc -c TetrominoTest.c
+tetris: ${OBJS}
+	cc -o tetris ${OBJS} -lm -lncurses
 
-.PHONY: tests clean 
+tetris.o: tetris.c tetromino.h
+	cc -c tetris.c
 
-tests: Tetromino.o TetrominoTest.o
-	cc -lncurses Tetromino.o TetrominoTest.o -o TetrominoTest
+tetromino.o: tetromino.c tetromino.h
+	cc -c tetromino.c
+
+tetromino_test.o: tetromino_test.c tetromino.h
+	cc -c tetromino_test.c
+
+tests: ${TEST_OBJS}
+	cc -o tetromino_test ${TEST_OBJS} -lncurses
 
 clean: 
-	-rm *.o
+	-rm *.o tetromino_test tetris

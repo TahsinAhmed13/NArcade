@@ -1,6 +1,6 @@
 #include <ncurses.h>
 
-#include "Tetromino.h"
+#include "tetromino.h"
 
 int main()
 {
@@ -16,7 +16,7 @@ int main()
 
     int ch = 0; 
     int n = 0; 
-    bool **tetromino; 
+    TETROMINO tetromino; 
     tetromino = get_copy(n); 
     do 
     {
@@ -26,7 +26,7 @@ int main()
         */
         if(ch == KEY_UP)
         {
-            bool **tmp = rotate(tetromino); 
+            TETROMINO tmp = rotate(tetromino); 
             del_copy(tetromino); 
             tetromino = tmp; 
         }
@@ -50,7 +50,7 @@ int main()
                 if(tetromino[i][j])
                     mvwprintw(win, 1 + i, 1 + 2*j, "  "); 
         wrefresh(win); 
-    }while((ch = wgetch(win)) != KEY_F(1)); 
+    } while((ch = wgetch(win)) != KEY_F(1)); 
 
     delwin(win); 
     endwin(); 

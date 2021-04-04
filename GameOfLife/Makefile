@@ -1,10 +1,14 @@
-GameOfLife : GameOfLife.o
-	cc -lncurses GameOfLife.o -o GameOfLife 
+OBJS = game_of_life.o
 
-GameOfLife.o : GameOfLife.c 
-	cc -c GameOfLife.c 
+run: game_of_life 
+	./game_of_life
 
-.PHONY: clean 
+game_of_life: ${OBJS}
+	cc -o game_of_life ${OBJS} -lncurses   
+
+game_of_life.o: game_of_life.c 
+	cc -c game_of_life.c 
+
 clean : 
-	-rm GameOfLife.o 
+	-rm *.o game_of_life
     
