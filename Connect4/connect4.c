@@ -67,7 +67,6 @@ int main()
             print_win_msg(-1); 
         refresh(); 
 
-        // TODO: replace with forking and signals
         pthread_create(&id, NULL, blink, (void *) win_chips); 
         if(!play_again())
         {
