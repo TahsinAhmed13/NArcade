@@ -1,4 +1,4 @@
-# NcursesDumpster 
+# NArcade
 
 This is a repo for learning C and Ncurses. Most of the stuff will be games but there might be other things too. The code is not meant to be super optimized so there probably will be global variables and dangling pointers, but who cares it's C! 
 
